@@ -1,5 +1,6 @@
 #!/bin/bash
 # Rofi extension for BitWarden-cli
+# TODO add search on id instead of name
 NAME="$(basename "$0")"
 VERSION="0.4"
 DEFAULT_CLEAR=5
@@ -111,6 +112,11 @@ show_items() {
   ); then
     item_array="$(array_from_name "$item")"
     copy_password "$item_array"
+    # # TODO Add filtering/ display format here
+    # item=$(echo "$ITEMS" | jq -r ".[] | select(.name == \"$item\")")
+    # field=$(echo -e "username\npassword\nnotes" | rofi_menu)
+    # copy_field "$field" "$item"
+    # # copy_password "$item"
   else
     rofi_exit_code=$?
     item_array="$(array_from_name "$item")"
@@ -284,20 +290,53 @@ clipboard-wayland-clear() {
 # copy to clipboard and give the user feedback that the password is copied
 # $1: json array of items
 copy_password() {
-  if not_unique "$1"; then
-    ITEMS="$1"
-    show_full_items
-  else
-    pass="$(echo "$1" | jq -r '.[0].login.password')"
+    if not_unique "$1"; then
+        ITEMS="$1"
+        show_full_items
+    else
+        pass="$(echo "$1" | jq -r '.[0].login.password')"
 
-    show_copy_notification "$(echo "$1" | jq -r '.[0]')"
-    echo -n "$pass" | clipboard-set
+        show_copy_notification "$(echo "$1" | jq -r '.[0]')"
+        echo -n "$pass" | clipboard-set
+        if [[ $CLEAR -gt 0 ]]; then
+            sleep "$CLEAR"
+            if [[ "$(clipboard-get)" == "$pass" ]]; then
+                clipboard-clear
+            fi
+        fi
+    fi
+}
 
-    if [[ $CLEAR -gt 0 ]]; then
-      sleep "$CLEAR"
-      if [[ "$(clipboard-get)" == "$pass" ]]; then
-        clipboard-clear
-      fi
+# copy_password() {
+#     pass=$(echo "$1" | jq -r '.login.password')
+
+#     show_copy_notification "$1"
+#     echo -n "$pass" | clipboard-set
+
+#     if [[ $CLEAR -gt 0 ]]; then
+#         sleep "$CLEAR"
+#         if [[ "$(clipboard-get)" == "$pass" ]]; then
+#             clipboard-clear
+#         fi
+#     fi
+# }
+
+copy_field() {
+  field_name="$1"
+  case "$field_name" in
+      "username") pattern=".login.${field_name}";;
+      "password") pattern=".login.${field_name}";;
+      *) pattern=".${field_name}";;
+  esac
+
+  pass=$(echo "$2" | jq -r "$pattern")
+
+  show_copy_notification "$2"
+  echo -n "$pass" | clipboard-set
+  if [[ $CLEAR -gt 0 ]]; then
+    sleep "$CLEAR"
+    if [[ "$(clipboard-get)" == "$pass" ]]; then
+      clipboard-clear
     fi
   fi
 }
