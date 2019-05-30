@@ -22,6 +22,7 @@ TYPE_LOGIN=1
 TYPE_NOTE=2
 TYPE_CARD=3
 TYPE_IDENTITY=4
+TYPE_UNKNOWN=99 # fail code
 
 # Populated in parse_cli_arguments
 ROFI_OPTIONS=()
@@ -106,7 +107,7 @@ rofi_menu() {
 show_items() {
   if item=$(
     echo "$ITEMS" \
-    | jq -r ".[] | select( has( \"login\" ) ) | \"\\(.name)\"" \
+    | jq -r ".[] | select( has( \"login\" ) or has( \"secureNote\" ) ) | \"\\(.name)\"" \
     | dedup_lines \
     | rofi_menu
   ); then
@@ -294,7 +295,19 @@ copy_password() {
         ITEMS="$1"
         show_full_items
     else
-        pass="$(echo "$1" | jq -r '.[0].login.password')"
+
+        # TODO extract to lib function with access pattern, use case
+        type=$(echo "$1" | jq ".[0].type")
+
+        if [ ! $type ]; then
+            type=$TYPE_UNKNOWN # set default if failed to set
+        fi
+
+        case "$type" in
+            "$TYPE_LOGIN") pass="$(echo "$1" | jq -r '.[0].login.password')";;
+            "$TYPE_NOTE") pass="$(echo "$1" | jq -r '.[0].notes')";;
+            *) return;; # invalid type - don't copy anything
+        esac
 
         show_copy_notification "$(echo "$1" | jq -r '.[0]')"
         echo -n "$pass" | clipboard-set
@@ -306,20 +319,6 @@ copy_password() {
         fi
     fi
 }
-
-# copy_password() {
-#     pass=$(echo "$1" | jq -r '.login.password')
-
-#     show_copy_notification "$1"
-#     echo -n "$pass" | clipboard-set
-
-#     if [[ $CLEAR -gt 0 ]]; then
-#         sleep "$CLEAR"
-#         if [[ "$(clipboard-get)" == "$pass" ]]; then
-#             clipboard-clear
-#         fi
-#     fi
-# }
 
 copy_field() {
   field_name="$1"
