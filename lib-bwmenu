@@ -28,3 +28,48 @@ dedup_lines() {
   | sed "s/^\s*1 //" \
   | sed -r "s/^\s*[0-9]+ /$DEDUP_MARK /"
 }
+
+
+# Get get_filter(src, action)
+# src - lpass, bw
+# action - show, show_full, filter, array_from_id, array_from_name
+
+# TODO
+# on get_session_key - checked if logged in to lpass too
+# update ask password to login to lpass if not already
+# load_items - load both with src
+# lpass foreach category
+# show_items - show both with new filter for both
+# lpass - only ls on sync, output alll ids?
+# load_lpass_items() {
+#     # declare -A groups
+#     # groups=(["(none)"]=1 ["Banking"]=1 ["Business"]=1 ["Education"]=1
+#     #          ["Email"]=1 ["Entertainment"]=1 ["Finance"]=1 ["Games"]=1
+#     #          ["General"]=1 ["Home"]=1 ["Mobile"]=1 ["News/Reference"]=1
+#     #          ["Productivity Tools"]=1 ["Secure Notes"]=1)
+#     #     raw_items=$(lpass ls --format="%ai")
+#     #     id_string=""
+#     #     for line in $raw_items; do
+#     #         if [ ! ${groups[$line]} ]; then
+#     #             id_string="${id_string} ${line}"
+#     #         fi
+#     #     done
+#     #     # echo $a
+#     # id_string=$(lpass ls --format="%ai" | rg "\d")
+#     if ! lpass_items=$(lpass ls --format="%ai" | xargs lpass show --json | jq 'map(. + {"source": "lastpass"})' 2>/dev/null); then
+#         exit_error $? "Could not load lastpass items"
+#     fi
+
+
+#     # echo $lpass_items
+# }
+
+# load_lpass_items
+
+# exit_error() {
+#     local code="$1"
+#     local message="$2"
+
+#     rofi -e "$message"
+#     exit "$code"
+# }

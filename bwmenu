@@ -58,10 +58,38 @@ get_session_key() {
 # source the hash file to gain access to the BitWarden CLI
 # Pre fetch all the items
 load_items() {
-  if ! ITEMS=$(bw list items --session "$BW_HASH" 2>/dev/null); then
-    exit_error $? "Could not load items"
+    if ! ITEMS=$(bw list items --session "$BW_HASH" | jq 'map(. + {"source": "bitwarden"})' 2>/dev/null); then
+    exit_error $? "Could not load bitwarden items"
   fi
+
+    load_lpass_items
+    ITEMS=( "${ITEMS[@]}" "${lpass_items[@]}")
+    echo "loaded items"
 }
+
+load_lpass_items() {
+    # declare -A groups
+    # groups=(["(none)"]=1 ["Banking"]=1 ["Business"]=1 ["Education"]=1
+    #          ["Email"]=1 ["Entertainment"]=1 ["Finance"]=1 ["Games"]=1
+    #          ["General"]=1 ["Home"]=1 ["Mobile"]=1 ["News/Reference"]=1
+    #          ["Productivity Tools"]=1 ["Secure Notes"]=1)
+    #     raw_items=$(lpass ls --format="%ai")
+    #     id_string=""
+    #     for line in $raw_items; do
+    #         if [ ! ${groups[$line]} ]; then
+    #             id_string="${id_string} ${line}"
+    #         fi
+    #     done
+    #     # echo $a
+    # id_string=$(lpass ls --format="%ai" | rg "\d")
+    if ! lpass_items=$(lpass ls --format="%ai" | xargs lpass show --json | jq 'map(. + {"source": "lastpass"})' 2>/dev/null); then
+        exit_error $? "Could not load lastpass items"
+    fi
+
+
+    # echo $lpass_items
+}
+
 
 exit_error() {
   local code="$1"
@@ -106,8 +134,8 @@ rofi_menu() {
 # Show items in a rofi menu by name of the item
 show_items() {
   if item=$(
-    echo "$ITEMS" \
-    | jq -r ".[] | select( has( \"login\" ) or has( \"secureNote\" ) ) | \"\\(.name)\"" \
+    echo "${ITEMS[@]}" \
+        | jq -r ".[] | select( has( \"login\" ) or has( \"secureNote\" ) or has( \"note\" ) or has( \"username\")  ) | \"\\(.name), src: \\(.source)\"" \
     | dedup_lines \
     | rofi_menu
   ); then
@@ -297,6 +325,8 @@ copy_password() {
     else
 
         # TODO extract to lib function with access pattern, use case
+        # TODO check type if bw, check group if lpass
+        # TODO lpass - type is login if it has a group property at all, note if group Secure Notes
         type=$(echo "$1" | jq ".[0].type")
 
         if [ ! $type ]; then
