@@ -5,7 +5,7 @@
 # $1: item name, prepended or not with deduplication mark
 array_from_name() {
   item_name="$(echo "$1" | sed "s/$DEDUP_MARK //")"
-  echo "$ITEMS" | jq -r ". | map(select((.name == \"$item_name\") and (.type == $TYPE_LOGIN or .type == $TYPE_NOTE)))"
+  echo "$ITEMS" | jq -r ". | map(select((.name == \"$item_name\") and (.type == $TYPE_LOGIN or .type == $TYPE_NOTE )))"
 }
 
 # Extract item matching .id
@@ -41,35 +41,3 @@ dedup_lines() {
 # lpass foreach category
 # show_items - show both with new filter for both
 # lpass - only ls on sync, output alll ids?
-# load_lpass_items() {
-#     # declare -A groups
-#     # groups=(["(none)"]=1 ["Banking"]=1 ["Business"]=1 ["Education"]=1
-#     #          ["Email"]=1 ["Entertainment"]=1 ["Finance"]=1 ["Games"]=1
-#     #          ["General"]=1 ["Home"]=1 ["Mobile"]=1 ["News/Reference"]=1
-#     #          ["Productivity Tools"]=1 ["Secure Notes"]=1)
-#     #     raw_items=$(lpass ls --format="%ai")
-#     #     id_string=""
-#     #     for line in $raw_items; do
-#     #         if [ ! ${groups[$line]} ]; then
-#     #             id_string="${id_string} ${line}"
-#     #         fi
-#     #     done
-#     #     # echo $a
-#     # id_string=$(lpass ls --format="%ai" | rg "\d")
-#     if ! lpass_items=$(lpass ls --format="%ai" | xargs lpass show --json | jq 'map(. + {"source": "lastpass"})' 2>/dev/null); then
-#         exit_error $? "Could not load lastpass items"
-#     fi
-
-
-#     # echo $lpass_items
-# }
-
-# load_lpass_items
-
-# exit_error() {
-#     local code="$1"
-#     local message="$2"
-
-#     rofi -e "$message"
-#     exit "$code"
-# }
