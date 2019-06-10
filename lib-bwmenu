@@ -4,8 +4,22 @@
 # Extract item or items matching .name, including deduplication
 # $1: item name, prepended or not with deduplication mark
 array_from_name() {
-  item_name="$(echo "$1" | sed "s/$DEDUP_MARK //")"
-  echo "$ITEMS" | jq -r ". | map(select((.name == \"$item_name\") and (.type == $TYPE_LOGIN or .type == $TYPE_NOTE )))"
+  item_id="$(echo "$item" | cut -d ':' -f 1)"
+  item_name="$(echo "$1" | sed "s/$DEDUP_MARK//" | sed 's/^[ \t]*//;s/[ \t]*$//' )"
+  echo "$ITEMS" | jq -r ". | map(select((.name == \"$item_name\") and (.type == $TYPE_LOGIN or .type == $TYPE_NOTE or has( \"username\" ) or has( \"note\" ))))"
+}
+
+# TODO array_from_source
+# compare to name + source value
+array_from_source() {
+    if [ "$2" == "lastpass" ]; then
+        # echo "chose lpass"
+        items_to_use="$lpass_items"
+    else
+        # echo "chose bw"
+        items_to_use="$ITEMS"
+    fi
+    echo "$items_to_use" | jq -r --argjson var "$1" '. | map(select((.name == $var.name) and (.source == $var.source)))'
 }
 
 # Extract item matching .id
@@ -26,7 +40,7 @@ not_unique() {
 dedup_lines() {
   sort | uniq -c \
   | sed "s/^\s*1 //" \
-  | sed -r "s/^\s*[0-9]+ /$DEDUP_MARK /"
+  | sed -r "s/^\s*[0-9]+ /$DEDUP_MARK/"
 }
 
 
@@ -35,9 +49,12 @@ dedup_lines() {
 # action - show, show_full, filter, array_from_id, array_from_name
 
 # TODO
+# remove special cases for each items
+# access global items instead of lpass_items/other (or not?)
 # on get_session_key - checked if logged in to lpass too
 # update ask password to login to lpass if not already
 # load_items - load both with src
 # lpass foreach category
 # show_items - show both with new filter for both
 # lpass - only ls on sync, output alll ids?
+# add feature - save last search state
